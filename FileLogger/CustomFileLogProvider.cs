@@ -80,13 +80,20 @@ namespace FileLogger
         {
             lock (_fileSync) // This is shared resource, so lock
             {
-                using (var file = File.OpenWrite(String.Format(_options.LogFile, logMessage.Category)))
+                try
                 {
-                    file.Seek(0, SeekOrigin.End);
-                    // TODO format better
-                    var contentToAppend = System.Text.UTF8Encoding.UTF8.GetBytes($"{logMessage.Message.ShowTimeAndThread()}\n");
-                    file.Write(contentToAppend, 0, contentToAppend.Length);
-                    file.Close();
+                    using (var file = File.OpenWrite(String.Format(_options.LogFile, logMessage.Category)))
+                    {
+                        file.Seek(0, SeekOrigin.End);
+                        // TODO format better
+                        var contentToAppend = System.Text.UTF8Encoding.UTF8.GetBytes($"{logMessage.Message.ShowTimeAndThread()}\n");
+                        file.Write(contentToAppend, 0, contentToAppend.Length);
+                        file.Close();
+                    }
+                }
+                catch
+                {
+                    // Shouldn't be fatal IMO
                 }
             }
         }

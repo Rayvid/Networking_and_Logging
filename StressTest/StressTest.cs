@@ -3,6 +3,7 @@ using FileLogger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace StressTest
@@ -92,9 +93,37 @@ namespace StressTest
                             break;
 
                         case 3:
+                            for (var i = 0; i < 1000; i++)
+                                Task.Run(() =>
+                                {
+                                    client1.BroadcastMessage("largemessage");
+                                });
+                            break;
+
+                        case 4:
                             Task.Run(() =>
                             {
-                                for (var i = 0; i < 1000; i++) client1.BroadcastMessage("largemessage");
+                                List<ChatClient> clients = new List<ChatClient>();
+                                for (var i = 0; i < 10; i++)
+                                {
+                                    var client = serviceProvide.GetService<ChatClient>();
+                                    if (localServer)
+                                    {
+                                        client.StartClient("127.0.0.1", "11000");
+                                    }
+                                    else
+                                    {
+                                        client.StartClient(args[2], args[3]);
+                                    }
+                                    clients.Add(client);
+
+                                    if (i % 2 == 1)
+                                    {
+                                        clients[i / 2].Close();
+                                    }
+
+                                    client1.BroadcastMessage("largemessage");
+                                }
                             });
                             break;
                     }

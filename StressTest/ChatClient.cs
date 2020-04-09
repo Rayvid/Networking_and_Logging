@@ -114,20 +114,30 @@ namespace CS3500
         {
             logger.LogInformation("On Receive callback executing. ");
             SocketState theServer = (SocketState)ar.AsyncState;
-            int numBytes = theServer.theSocket.EndReceive(ar);
+            lock (theServer)
+            {
+                try
+                {
+                    int numBytes = theServer.theSocket.EndReceive(ar);
 
-            string message = Encoding.UTF8.GetString(theServer.messageBuffer, 0, numBytes);
+                    string message = Encoding.UTF8.GetString(theServer.messageBuffer, 0, numBytes);
 
-            logger.LogDebug($"   Received {message.Length} characters.  Could be a message (or not) based on protocol");
-            logger.LogDebug($"     Data is: {message}");
+                    logger.LogDebug($"   Received {message.Length} characters.  Could be a message (or not) based on protocol");
+                    logger.LogDebug($"     Data is: {message}");
 
-            theServer.sb.Append(message);
+                    theServer.sb.Append(message);
 
-            ProcessMessages(theServer.sb);
+                    ProcessMessages(theServer.sb);
 
-            // Continue the "event loop" and receive more data
-            theServer.theSocket.BeginReceive(theServer.messageBuffer, 0, theServer.messageBuffer.Length, SocketFlags.None, 
-                OnReceive, theServer);
+                    // Continue the "event loop" and receive more data
+                    theServer.theSocket.BeginReceive(theServer.messageBuffer, 0, theServer.messageBuffer.Length, SocketFlags.None,
+                        OnReceive, theServer);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Communication error");
+                }
+            }
         }
 
         /// <summary>
@@ -148,11 +158,23 @@ namespace CS3500
                 {
                     lastKnownServer.BeginSend(messageBytes, 0, messageBytes.Length, SocketFlags.None, _ => {}, null);
                 }
-                catch (Exception) // Begin Send fails if connection is broken
+                catch (Exception ex) // Begin Send fails if connection is broken
                 {
+                    logger.LogWarning("Broadcast have failed, aborting broadcast channel");
                     lastKnownServer = null;
-                    logger.LogWarning("Seems connection gone, closing bradcast channel");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Closes connection to server
+        /// </summary>
+        public void Close()
+        {
+            if (lastKnownServer != null)
+            {
+                logger.LogInformation("Closing channel");
+                lastKnownServer.Close();
             }
         }
 
@@ -182,6 +204,5 @@ namespace CS3500
                 sb.Remove(0, p.Length);
             }
         }
-
     }
 }

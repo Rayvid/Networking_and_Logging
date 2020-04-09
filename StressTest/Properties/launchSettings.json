@@ -2,7 +2,7 @@
   "profiles": {
     "StressTest": {
       "commandName": "Project",
-      "commandLineArgs": "local 3"
+      "commandLineArgs": "local 4"
     }
   }
 }

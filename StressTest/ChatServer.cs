@@ -17,7 +17,7 @@ namespace CS3500
         /// keep track of how big a message to send... keep getting bigger!
         /// </summary>
         private long larger = 5000;
-        private ILogger<ChatClient> logger;
+        private ILogger<ChatServer> logger;
 
         /// <summary>
         /// A list of all clients currently connected
@@ -70,9 +70,15 @@ namespace CS3500
 
             // Get the socket
             var socket = listener.EndAcceptSocket(ar);
-            socket.BeginReceive((byte[]) ar.AsyncState, 0, 1024, SocketFlags.None, OnReceive, (socket, ar.AsyncState));
-            clients.Add(socket);
-
+            try
+            {
+                socket.BeginReceive((byte[])ar.AsyncState, 0, 1024, SocketFlags.None, OnReceive, (socket, ar.AsyncState));
+                clients.Add(socket);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Communication error");
+            }
             // continue an event-loop that will allow more clients to connect
             listener.BeginAcceptSocket(ConnectionRequested, new byte[1024]);
         }
@@ -84,8 +90,16 @@ namespace CS3500
         private void OnReceive(IAsyncResult ar)
         {
             logger.LogInformation("Broadcast trigerred");
-            SendMessage(Encoding.UTF8.GetString((byte[])((ValueTuple<Socket, object>)ar.AsyncState).Item2, 0, ((ValueTuple<Socket, object>)ar.AsyncState).Item1.EndReceive(ar)));
-            ((ValueTuple<Socket, object>)ar.AsyncState).Item1.BeginReceive((byte[])((ValueTuple<Socket, object>)ar.AsyncState).Item2, 0, 1024, SocketFlags.None, OnReceive, ar.AsyncState);
+            try
+            {
+                SendMessage(Encoding.UTF8.GetString((byte[])((ValueTuple<Socket, object>)ar.AsyncState).Item2, 0, ((ValueTuple<Socket, object>)ar.AsyncState).Item1.EndReceive(ar)));
+                ((ValueTuple<Socket, object>)ar.AsyncState).Item1.BeginReceive((byte[])((ValueTuple<Socket, object>)ar.AsyncState).Item2, 0, 1024, SocketFlags.None, OnReceive, ar.AsyncState);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Communication error");
+                clients.Remove(((ValueTuple<Socket, object>)ar.AsyncState).Item1);
+            }
         }
 
         /// <summary>

@@ -40,4 +40,13 @@ You will note that the above example file output contains the date and thread id
 Since we use those in mutithreaded environment, we adjusted code to use only instance variables or add locks for threadsafe access
 
 # Wrote stress test scenarios:
-TBD
+First added broadcast and close commands to client to be able to test more scenarios
+
+1 - just send message from client to server if local or broadcast if remote
+2 - same as 1, just 3 large messges concurrently
+3 - 1000 cuncurrent broadcasts
+4 - 10 new clients and 10 broadcasts time to time closing some client
+
+Implemented alot of error handling, to close connection gracefully
+Implemented lock in chat receive, otherwise messages text starts to overlap due concurency
+For further exercise - if to stress alot, socket closes due some system protection mechanism, would be nice to implement attempt to gracefully restore connection
