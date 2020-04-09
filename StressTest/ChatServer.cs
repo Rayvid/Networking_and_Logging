@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -7,8 +8,6 @@ using System.Threading;
 
 namespace CS3500
 {
-    
-
     /// <summary>
     /// A simple server for sending simple text messages to multiple clients
     /// </summary>
@@ -18,6 +17,7 @@ namespace CS3500
         /// keep track of how big a message to send... keep getting bigger!
         /// </summary>
         private long larger = 5000;
+        private ILogger<ChatClient> logger;
 
         /// <summary>
         /// A list of all clients currently connected
@@ -27,10 +27,12 @@ namespace CS3500
         private TcpListener listener;
 
         /// <summary>
-        ///   Nothing to "construct" at this time
+        /// DI Constructor
         /// </summary>
-        public ChatServer()
+        /// <param name="logger">.Net core loggger instance</param>
+        public ChatServer(ILogger<ChatClient> logger)
         {
+            this.logger = logger;
         }
 
         /// <summary>
@@ -47,7 +49,7 @@ namespace CS3500
             }
 
             listener = new TcpListener(IPAddress.Any, port);
-            Console.WriteLine($"Server waiting for clients here: 127.0.0.1 on port {port}");
+            logger.LogInformation($"Server waiting for clients here: 127.0.0.1 on port {port}");
 
             listener.Start();
 
@@ -64,7 +66,7 @@ namespace CS3500
         /// <param name="ar"></param>
         private void ConnectionRequested(IAsyncResult ar)
         {
-            Console.WriteLine("Contact from client");
+            logger.LogInformation("Contact from client");
 
             // Get the socket
             clients.Add(listener.EndAcceptSocket(ar));
@@ -72,7 +74,6 @@ namespace CS3500
             // continue an event-loop that will allow more clients to connect
             listener.BeginAcceptSocket(ConnectionRequested, null);
         }
-
 
         /// <summary>
         /// Continuously ask the user for a message to send to the client
@@ -91,7 +92,7 @@ namespace CS3500
             byte[] messageBytes = Encoding.UTF8.GetBytes(message);
             List<Socket> toRemove = new List<Socket>();
 
-            Console.WriteLine($"   Sending a message of size: {message.Length}");
+            logger.LogInformation($"   Sending a message of size: {message.Length}");
 
             foreach (Socket s in clients)
             {
@@ -100,7 +101,8 @@ namespace CS3500
                     s.BeginSend(messageBytes, 0, messageBytes.Length, SocketFlags.None, SendCallback, s);
                 }
                 catch (Exception) // Begin Send fails if client is closed
-                { 
+                {
+                    logger.LogWarning("Seems client gone, removing");
                     toRemove.Add(s); 
                 }
             }
@@ -108,7 +110,7 @@ namespace CS3500
             // update list of "current" clients by removing closed clients
             foreach (Socket s in toRemove)
             {
-                Console.WriteLine($"Client {s} disconnected");
+                logger.LogInformation($"Client {s} disconnected");
                 clients.Remove(s);
             }
         }
@@ -146,9 +148,7 @@ namespace CS3500
             Socket client = (Socket)ar.AsyncState;
             long send_length = client.EndSend(ar);
 
-            Console.WriteLine($"   Sent a message of size: {send_length}");
-
+            logger.LogDebug($"   Sent a message of size: {send_length}");
         }
-
     }
 }

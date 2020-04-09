@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -23,7 +24,17 @@ namespace CS3500
 
     public class ChatClient
     {
-        private static int port = -1;
+        private int port = -1;
+        private ILogger<ChatClient> logger;
+
+        /// <summary>
+        /// DI Constructor
+        /// </summary>
+        /// <param name="logger">.Net core loggger instance</param>
+        public ChatClient(ILogger<ChatClient> logger)
+        {
+            this.logger = logger;
+        }
 
         /// <summary>
         /// Entry point to chat client we ported from standalone application
@@ -80,7 +91,7 @@ namespace CS3500
         /// <param name="ar"></param>
         private void OnConnected(IAsyncResult ar)
         {
-            Console.WriteLine("Was able to contact the server and establish a connection");
+            logger.LogInformation("Was able to contact the server and establish a connection");
 
             SocketState theServer = (SocketState)ar.AsyncState;
 
@@ -100,14 +111,14 @@ namespace CS3500
         /// <param name="ar"></param>
         private void OnReceive(IAsyncResult ar)
         {
-            Console.WriteLine("On Receive callback executing. ");
+            logger.LogInformation("On Receive callback executing. ");
             SocketState theServer = (SocketState)ar.AsyncState;
             int numBytes = theServer.theSocket.EndReceive(ar);
 
             string message = Encoding.UTF8.GetString(theServer.messageBuffer, 0, numBytes);
 
-            Console.WriteLine($"   Received {message.Length} characters.  Could be a message (or not) based on protocol");
-            Console.WriteLine($"     Data is: {message}");
+            logger.LogDebug($"   Received {message.Length} characters.  Could be a message (or not) based on protocol");
+            logger.LogDebug($"     Data is: {message}");
 
             theServer.sb.Append(message);
 
@@ -140,11 +151,9 @@ namespace CS3500
                     break;
 
                 // process p
-                Console.WriteLine("message received");
-                Console.WriteLine(p);
+                logger.LogInformation($"Message received: {p}");
 
                 sb.Remove(0, p.Length);
-
             }
         }
 
