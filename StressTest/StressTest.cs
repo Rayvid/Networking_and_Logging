@@ -1,4 +1,5 @@
 ﻿using CS3500;
+using FileLogger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -24,6 +25,7 @@ namespace StressTest
                         // Standard way to configure logging, can ommit in this app since we are not using any configuration sources
                         // logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
                         logging.AddConsole();
+                        logging.AddFileLogger();
                         logging.SetMinimumLevel(LogLevel.Debug);
                         // TODO our own file logging provider
                     })
