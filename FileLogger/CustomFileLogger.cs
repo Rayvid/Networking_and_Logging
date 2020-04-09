@@ -6,21 +6,22 @@ namespace FileLogger
 {
     public class FileLoggerOptions
     {
-        public string LogFile { get; set; } = "log.txt";
+        public string LogFile { get; set; } = "Log_{0}.txt";
+        public bool DoReplaceLogFiles { get; set; } = false;
     }
 
     public class CustomFileLogger : ILogger
     {
-        public CustomeFileLogProvider _provider { get; private set; }
+        public CustomFileLogProvider _provider { get; private set; }
         public string _category { get; private set; }
 
-        public CustomFileLogger(CustomeFileLogProvider provider, string category)
+        public CustomFileLogger(CustomFileLogProvider provider, string category)
         {
             _provider = provider;
             _category = category;
         }
 
-        public CustomFileLogger(CustomeFileLogProvider provider, Type category)
+        public CustomFileLogger(CustomFileLogProvider provider, Type category)
         {
             _provider = provider;
             _category = category.FullName;

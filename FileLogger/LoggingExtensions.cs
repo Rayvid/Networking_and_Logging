@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -7,6 +8,14 @@ using Microsoft.Extensions.Logging.Configuration;
 
 namespace FileLogger
 {
+    public static class ShowTimeAndThreadClass
+    {
+        public static string ShowTimeAndThread(this string logMessage)
+        {
+            return $"{System.DateTime.Now:yyyy-MM-dd h:mm:ss tt} ({Thread.CurrentThread.ManagedThreadId}) {logMessage}";
+        }
+    }
+
     public static class LoggingExtensions
     {
         /// <summary>
@@ -17,8 +26,8 @@ namespace FileLogger
         public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder)
         {
             builder.AddConfiguration();
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, CustomeFileLogProvider>());
-            LoggerProviderOptions.RegisterProviderOptions<FileLoggerOptions, CustomeFileLogProvider>(builder.Services);
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, CustomFileLogProvider>());
+            LoggerProviderOptions.RegisterProviderOptions<FileLoggerOptions, CustomFileLogProvider>(builder.Services);
             return builder;
         }
 
@@ -27,7 +36,7 @@ namespace FileLogger
         /// </summary>
         public static ILoggerFactory AddFileLogger(this ILoggerFactory factory)
         {
-            factory.AddProvider(new CustomeFileLogProvider());
+            factory.AddProvider(new CustomFileLogProvider());
             return factory;
         }
 
@@ -37,7 +46,7 @@ namespace FileLogger
         /// <typeparam name="T"></typeparam>
         public class FileLogger<T> : CustomFileLogger, ILogger<T>
         {
-            public FileLogger(CustomeFileLogProvider provider) : base(provider, typeof(T))
+            public FileLogger(CustomFileLogProvider provider) : base(provider, typeof(T))
             {
             }
         }
