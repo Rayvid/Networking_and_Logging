@@ -21,39 +21,32 @@ namespace CS3500
         }
     }
 
-    class ChatClient
+    public class ChatClient
     {
         private static int port = -1;
 
-        static void Main(string[] args)
+        /// <summary>
+        /// Entry point to chat client we ported from standalone application
+        /// </summary>
+        /// <param name="serverAddr">Chat server address</param>
+        /// <param name="portNumber">Chat server port</param>
+        public void StartClient(string serverAddr, string portNumber)
         {
-            ChatClient client = new ChatClient();
-
-            Console.WriteLine("enter server address:");
-            string serverAddr = Console.ReadLine();
-
-            Console.WriteLine("enter server port:");
-            string portNumber = Console.ReadLine();
-
             if (!Int32.TryParse(portNumber, out port))
             {
-                Console.WriteLine("could not understand that... exiting");
+                throw new ArgumentException("Cannot parse port... exiting");
             }
             else
             {
                 try
                 {
-                    client.ConnectToServer(serverAddr);
+                    ConnectToServer(serverAddr);
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Error in connection {e}");
+                    throw new InvalidOperationException($"Error in connection {e}");
                 }
             }
-
-            // Hold the console open
-            Console.WriteLine("Press Enter to Exit");
-            Console.Read();
         }
 
         /// <summary>

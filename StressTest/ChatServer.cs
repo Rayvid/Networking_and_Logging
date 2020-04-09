@@ -12,26 +12,12 @@ namespace CS3500
     /// <summary>
     /// A simple server for sending simple text messages to multiple clients
     /// </summary>
-    class ChatServer
+    public class ChatServer
     {
         /// <summary>
         /// keep track of how big a message to send... keep getting bigger!
         /// </summary>
         private long larger = 5000;
-
-        static void Main(string[] args)
-        {
-            ChatServer server = new ChatServer();
-            server.StartServer();
-
-            // Sleep to prevent the program from closing,
-            // since all the real work is done in separate threads
-            // StartServer is non-blocking
-            // (yes, there are better ways to do this, left as an exercise)
-            Thread.Sleep(10000000);
-        }
-
-
 
         /// <summary>
         /// A list of all clients currently connected
@@ -50,11 +36,9 @@ namespace CS3500
         /// <summary>
         /// Start accepting Tcp socket connections from clients
         /// </summary>
-        public void StartServer()
+        /// <param name="portStr">port we want to server listen on</param>
+        public void StartServer(string portStr = "11000")
         {
-            Console.WriteLine("Enter port to listen on (default 11000):");
-            string portStr = Console.ReadLine();
-
             int port;
            
             if (! Int32.TryParse(portStr, out port) )
@@ -72,9 +56,6 @@ namespace CS3500
             // TODO: we should be passing the TcpListener as the last argument, instead 
             //       of having it as a member of the class.
             listener.BeginAcceptSocket(ConnectionRequested, null);
-
-            // waits for the user to type messages, then sends them
-            SendMessage();
         }
 
         /// <summary>
@@ -96,43 +77,39 @@ namespace CS3500
         /// <summary>
         /// Continuously ask the user for a message to send to the client
         /// </summary>
-        private void SendMessage()
+        /// <param name="message">Message to send</param>
+        public void SendMessage(string message)
         {
-            while (true)
+            if (message == "largemessage")
             {
-                Console.WriteLine("enter a message to send");
-                string message = Console.ReadLine();
-                if (message == "largemessage")
+                message = GenerateLargeMessage();
+            }
+
+            //
+            // Begin sending the message
+            //
+            byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+            List<Socket> toRemove = new List<Socket>();
+
+            Console.WriteLine($"   Sending a message of size: {message.Length}");
+
+            foreach (Socket s in clients)
+            {
+                try
                 {
-                    message = GenerateLargeMessage();
+                    s.BeginSend(messageBytes, 0, messageBytes.Length, SocketFlags.None, SendCallback, s);
                 }
-
-                //
-                // Begin sending the message
-                //
-                byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-                List<Socket> toRemove = new List<Socket>();
-
-                Console.WriteLine($"   Sending a message of size: {message.Length}");
-
-                foreach (Socket s in clients)
-                {
-                    try
-                    {
-                        s.BeginSend(messageBytes, 0, messageBytes.Length, SocketFlags.None, SendCallback, s);
-                    }
-                    catch (Exception) // Begin Send fails if client is closed
-                    { 
-                        toRemove.Add(s); 
-                    }
+                catch (Exception) // Begin Send fails if client is closed
+                { 
+                    toRemove.Add(s); 
                 }
+            }
 
-                // update list of "current" clients by removing closed clients
-                foreach (Socket s in toRemove)
-                {
-                    Console.WriteLine($"Client {s} disconnected");
-                    clients.Remove(s);
-                }
+            // update list of "current" clients by removing closed clients
+            foreach (Socket s in toRemove)
+            {
+                Console.WriteLine($"Client {s} disconnected");
+                clients.Remove(s);
             }
         }
 

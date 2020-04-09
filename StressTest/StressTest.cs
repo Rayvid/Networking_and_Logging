@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CS3500;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
@@ -12,7 +13,7 @@ namespace StressTest
         {
             if (args.Length == 0)
             {
-                Console.WriteLine("usage: StressTest.exe local/remote #");
+                Console.WriteLine("usage: StressTest.exe local/remote # [remote address] [remote port]");
                 return;
             }
             else
@@ -31,8 +32,17 @@ namespace StressTest
                 var logger = serviceProvide.GetService<ILogger<ConsoleHost>>();
 
                 logger.LogInformation("Starting stress test app");
+
+                var server = new ChatServer();
+                server.StartServer();
+
+                var client = new ChatClient();
+                client.StartClient("127.0.0.1", "11000");
+
+                Task.Run(() =>server.SendMessage("largemessage"));
+
+                // TODO further logic and remove sleep
                 Thread.Sleep(10000);
-                // TODO further logic
             }
         }
     }
