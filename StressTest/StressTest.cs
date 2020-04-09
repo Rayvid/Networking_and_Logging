@@ -57,21 +57,49 @@ namespace StressTest
                         client1.StartClient(args[2], args[3]);
                     }
 
+                    var client2 = serviceProvide.GetService<ChatClient>();
+                    if (localServer)
+                    {
+                        client2.StartClient("127.0.0.1", "11000");
+                    }
+                    else
+                    {
+                        client2.StartClient(args[2], args[3]);
+                    }
+
                     switch (stressTestNo)
                     {
                         case 1:
-                            Task.Run(() => server.SendMessage("Test case 1."));
+                            Task.Run(() =>
+                            {
+                                if (localServer) server.SendMessage("Test case 1."); else client1.BroadcastMessage("Test case 1.");
+                            });
                             break;
 
                         case 2:
-                            Task.Run(() => server.SendMessage("largemessage"));
-                            Task.Run(() => server.SendMessage("largemessage"));
-                            Task.Run(() => server.SendMessage("largemessage"));
+                            Task.Run(() =>
+                            {
+                                if (localServer) server.SendMessage("largemessage"); else client1.BroadcastMessage("largemessage");
+                            });
+                            Task.Run(() =>
+                            {
+                                if (localServer) server.SendMessage("largemessage"); else client1.BroadcastMessage("largemessage");
+                            });
+                            Task.Run(() =>
+                            {
+                                if (localServer) server.SendMessage("largemessage"); else client1.BroadcastMessage("largemessage");
+                            });
+                            break;
+
+                        case 3:
+                            Task.Run(() =>
+                            {
+                                for (var i = 0; i < 1000; i++) client1.BroadcastMessage("largemessage");
+                            });
                             break;
                     }
 
-
-                    logger.LogInformation("Stress test kicked off - monitor logsfor progress");
+                    logger.LogInformation("Stress test kicked off - monitor logs for progress");
                 }
                 catch (Exception ex)
                 {

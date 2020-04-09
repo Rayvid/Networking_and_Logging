@@ -26,6 +26,7 @@ namespace CS3500
     {
         private int port = -1;
         private ILogger<ChatClient> logger;
+        private Socket lastKnownServer;
 
         /// <summary>
         /// DI Constructor
@@ -94,6 +95,7 @@ namespace CS3500
             logger.LogInformation("Was able to contact the server and establish a connection");
 
             SocketState theServer = (SocketState)ar.AsyncState;
+            lastKnownServer = theServer.theSocket;
 
             // this does not end the connection! this simply acknowledges that we are at the _end_ of the start
             // of the connection phase!
@@ -103,7 +105,6 @@ namespace CS3500
             theServer.theSocket.BeginReceive(theServer.messageBuffer, 0, theServer.messageBuffer.Length, SocketFlags.None, 
                 OnReceive, theServer);
         }
-
         
         /// <summary>
         /// Callback for when a receive operation completes (see BeginReceive)
@@ -129,6 +130,31 @@ namespace CS3500
                 OnReceive, theServer);
         }
 
+        /// <summary>
+        /// Send to all the clients
+        /// </summary>
+        /// <param name="message">Message to send</param>
+        public void BroadcastMessage(string message)
+        {
+            //
+            // Begin sending the message
+            //
+            byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+
+            logger.LogInformation($"   Sending a message of size: {message.Length}");
+            if (lastKnownServer != null)
+            {
+                try
+                {
+                    lastKnownServer.BeginSend(messageBytes, 0, messageBytes.Length, SocketFlags.None, _ => {}, null);
+                }
+                catch (Exception) // Begin Send fails if connection is broken
+                {
+                    lastKnownServer = null;
+                    logger.LogWarning("Seems connection gone, closing bradcast channel");
+                }
+            }
+        }
 
         /// <summary>
         /// Look for complete messages (terminated by a '.'), 

@@ -23,14 +23,14 @@ namespace CS3500
         /// A list of all clients currently connected
         /// </summary>
         private List<Socket> clients = new List<Socket>();
-
+        
         private TcpListener listener;
 
         /// <summary>
         /// DI Constructor
         /// </summary>
         /// <param name="logger">.Net core loggger instance</param>
-        public ChatServer(ILogger<ChatClient> logger)
+        public ChatServer(ILogger<ChatServer> logger)
         {
             this.logger = logger;
         }
@@ -57,7 +57,7 @@ namespace CS3500
             // ConnectionRequested will be invoked when the first connection arrives.
             // TODO: we should be passing the TcpListener as the last argument, instead 
             //       of having it as a member of the class.
-            listener.BeginAcceptSocket(ConnectionRequested, null);
+            listener.BeginAcceptSocket(ConnectionRequested, new byte[1024]);
         }
 
         /// <summary>
@@ -69,14 +69,27 @@ namespace CS3500
             logger.LogInformation("Contact from client");
 
             // Get the socket
-            clients.Add(listener.EndAcceptSocket(ar));
+            var socket = listener.EndAcceptSocket(ar);
+            socket.BeginReceive((byte[]) ar.AsyncState, 0, 1024, SocketFlags.None, OnReceive, (socket, ar.AsyncState));
+            clients.Add(socket);
 
             // continue an event-loop that will allow more clients to connect
-            listener.BeginAcceptSocket(ConnectionRequested, null);
+            listener.BeginAcceptSocket(ConnectionRequested, new byte[1024]);
         }
 
         /// <summary>
-        /// Continuously ask the user for a message to send to the client
+        /// Callback for when a receive operation completes (see BeginReceive)
+        /// </summary>
+        /// <param name="ar"></param>
+        private void OnReceive(IAsyncResult ar)
+        {
+            logger.LogInformation("Broadcast trigerred");
+            SendMessage(Encoding.UTF8.GetString((byte[])((ValueTuple<Socket, object>)ar.AsyncState).Item2, 0, ((ValueTuple<Socket, object>)ar.AsyncState).Item1.EndReceive(ar)));
+            ((ValueTuple<Socket, object>)ar.AsyncState).Item1.BeginReceive((byte[])((ValueTuple<Socket, object>)ar.AsyncState).Item2, 0, 1024, SocketFlags.None, OnReceive, ar.AsyncState);
+        }
+
+        /// <summary>
+        /// Send to all the clients
         /// </summary>
         /// <param name="message">Message to send</param>
         public void SendMessage(string message)

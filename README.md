@@ -35,3 +35,9 @@ o	2020-03-20 1:38:35 PM (1) - Infor - This message was produced by a LogTrace ca
 5.	Close: close the file.
 Show Time And Thread String Extension
 You will note that the above example file output contains the date and thread id.  You should write an extension method that appends this information to a string.  (This information can be found in Date Time - Now and the Thread - CurrenThread - ManagedThreadId).  This extension should sit in its own class (ShowTimeAndThreadClass) and be named ShowTimeAndThread.
+
+# Adjusted client and server to not contain shared(static) members or add locks
+Since we use those in mutithreaded environment, we adjusted code to use only instance variables or add locks for threadsafe access
+
+# Wrote stress test scenarios:
+TBD
